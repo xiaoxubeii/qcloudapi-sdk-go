@@ -1,8 +1,8 @@
 package bmlb
 
 import (
-	"fmt"
-	"github.com/dbdd4us/qcloudapi-sdk-go/common"
+	"errors"
+	"time"
 )
 
 const (
@@ -46,7 +46,7 @@ func (client *Client) QueryLbTaskResult(requestId int) (int, error) {
 
 	err := client.Invoke("DescribeBmLoadBalancersTaskResult", req, rsp)
 	if err != nil {
-		return common.TASK_STATE_UNKNOWN, err
+		return TASK_STATE_UNKNOWN, err
 	}
 
 	return taskStatus.Status, nil
@@ -63,10 +63,10 @@ type BmLoadBalancerDetail struct {
 	LbType     string   `json:"loadBalancerType"`
 	LbVips     []string `json:"loadBalancerVips"`
 	UnSubnetId string   `json:"unSubnetId"`
-	ProjectId  string   `json:"projectId"`
+	ProjectId  int      `json:"projectId"`
 	PayMode    string   `json:"payMode"`
 	TgwSetType string   `json:"tgwSetType"`
-	Status     string   `json:"status"` //0创建中，1表示正常运行
+	Status     int      `json:"status"` //0创建中，1表示正常运行
 }
 
 type BmLoadBalancerSetResonse struct {
@@ -126,9 +126,9 @@ type DeleteBmLbRequest struct {
 }
 
 //删除LB：https://cloud.tencent.com/document/product/386/9304
-func (client *Client) DeleteBmLoadBalancer(req *DeleteBmLbRequest) (int, error) {
+func (client *Client) DeleteBmLoadBalancers(req *DeleteBmLbRequest) (int, error) {
 	rsp := &LbRequestIdResponse{}
-	err := client.Invoke("DeleteBmLoadBalancer", req, rsp)
+	err := client.Invoke("DeleteBmLoadBalancers", req, rsp)
 	if err != nil {
 		return 0, err
 	}
@@ -157,17 +157,20 @@ func (client *Client) WaitUntiTaskDone(taskId int, timeout int) error {
 		time.Sleep(TASK_QUERY_INTERVAL * time.Second)
 		count++
 
-		state := client.QueryLbTaskResult(taskId)
+		state, err := client.QueryLbTaskResult(taskId)
+		if err != nil {
+			return err
+		}
 		if state == TASK_STATE_SUCCESS {
 			return nil
 		} else if state == TASK_STATE_FAILED {
-			return error.New("bmLb waitUntilTaskDone task failed")
+			return errors.New("bmLb waitUntilTaskDone task failed")
 		}
 
 		if count*TASK_QUERY_INTERVAL < timeout {
 			continue
 		} else {
-			return error.New("bmLb waitUntilTaskDone task timeout")
+			return errors.New("bmLb waitUntilTaskDone task timeout")
 		}
 	}
 }

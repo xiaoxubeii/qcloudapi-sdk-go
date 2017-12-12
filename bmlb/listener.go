@@ -1,8 +1,7 @@
 package bmlb
 
-type DescribeBmLbListenerRequest struct {
-	LbId         string    `qcloud_arg:"loadBalancerId"`
-	ListenersIds *[]string `qcloud_arg:"listenerIds,omitempty"`
+type BmlbResponse struct {
+	Response interface{} `json:"data"`
 }
 
 const (
@@ -12,6 +11,11 @@ const (
 	LISTENER_STATE_DELETING      = 3
 	LISTENER_STATE_DELETE_FAILED = 4
 )
+
+type DescribeBmLbListenerRequest struct {
+	LbId         string    `qcloud_arg:"loadBalancerId"`
+	ListenersIds *[]string `qcloud_arg:"listenerIds,omitempty"`
+}
 
 type LbListenerDetail struct {
 	Id                 string `json:"listenerId"`
@@ -86,14 +90,14 @@ type BmLbBackEndRsDetail struct {
 	Weight   int    `json:"weight"`
 	Status   string `json:"status"`
 
-	Instanceid string `json:"instanceId"`
+	InstanceId string `json:"instanceId"`
 	LanIp      string `json:"lanIp"` //当bindtype为1时表示黑石物理机的内网IP，当bindType为1时表示虚机IP
 }
 
 //获取后端rs列表，https://cloud.tencent.com/document/product/386/9297
 func (client *Client) DescribeBmL4ListenerBackend(req *DescribeBm4BackendRsRequest) (*[]BmLbBackEndRsDetail, error) {
 	bmLbBackendRsDetail := make([]BmLbBackEndRsDetail, 0)
-	rsp := &common.DataResponse{
+	rsp := &BmlbResponse{
 		Response: &bmLbBackendRsDetail,
 	}
 
@@ -126,22 +130,22 @@ func (client *Client) UnbindBmL4ListenerRs(req *UnbindBmListenerRsRequest) (int,
 }
 
 type BmListenerCreateDetail struct {
-	LbPort             int    `qcloud_arg:"loadBalancerPort"`
-	Protocol           string `qcloud_arg:"protocol"`
-	Name               string `qcloud_arg:"listenerName,omitempty"`
-	SessionExpire      int    `qcloud_arg:"sessionExpire,omitempty"`
-	HealthSwitch       int    `qcloud_arg:"healthSwitch,omitempty"`
-	Timeout            int    `qcloud_arg:"timeOut,omitempty"`
-	IntervalTime       int    `qcloud_arg:"intervalTime,omitempty"`
-	HealthNum          int    `qcloud_arg:"healthNum,omitempty"`
-	UnhealthNum        int    `qcloud_arg:"unhealthNum,omitempty"`
-	BandWidth          int    `qcloud_arg:"bandwidth,omitempty"`
-	CustomHealthSwitch int    `qcloud_arg:"customHealthSwitch,omitempty"`
-	InputType          string `qcloud_arg:"inputType,omitempty"`
-	LineSeparatorType  int    `qcloud_arg:"lineSeparatorType,omitempty"`
-	HealthRequest      string `qcloud_arg:"healthRequest,omitempty"`
-	HealthResponse     string `qcloud_arg:"healthResponse,omitempty"`
-	ToaFlag            int    `qcloud_arg:"toaFlag,omitempty"`
+	LbPort             int     `qcloud_arg:"loadBalancerPort"`
+	Protocol           string  `qcloud_arg:"protocol"`
+	Name               string  `qcloud_arg:"listenerName,omitempty"`
+	SessionExpire      *int    `qcloud_arg:"sessionExpire,omitempty"`
+	HealthSwitch       *int    `qcloud_arg:"healthSwitch,omitempty"`
+	Timeout            *int    `qcloud_arg:"timeOut,omitempty"`
+	IntervalTime       *int    `qcloud_arg:"intervalTime,omitempty"`
+	HealthNum          *int    `qcloud_arg:"healthNum,omitempty"`
+	UnhealthNum        *int    `qcloud_arg:"unhealthNum,omitempty"`
+	BandWidth          *int    `qcloud_arg:"bandwidth,omitempty"`
+	CustomHealthSwitch *int    `qcloud_arg:"customHealthSwitch,omitempty"`
+	InputType          *string `qcloud_arg:"inputType,omitempty"`
+	LineSeparatorType  *int    `qcloud_arg:"lineSeparatorType,omitempty"`
+	HealthRequest      *string `qcloud_arg:"healthRequest,omitempty"`
+	HealthResponse     *string `qcloud_arg:"healthResponse,omitempty"`
+	ToaFlag            *int    `qcloud_arg:"toaFlag,omitempty"`
 }
 
 type CreateBmListenerRequest struct {
@@ -150,7 +154,7 @@ type CreateBmListenerRequest struct {
 }
 
 //创建4层监听器，https://cloud.tencent.com/document/product/386/9292
-func (client *BmLoadBalancerClient) CreateBmListeners(req *CreateBmListenerRequest) (int, error) {
+func (client *Client) CreateBmListeners(req *CreateBmListenerRequest) (int, error) {
 	rsp := &LbRequestIdResponse{}
 	err := client.Invoke("CreateBmListeners", req, rsp)
 	if err != nil {
@@ -165,7 +169,7 @@ type DeleteBmListenersRequest struct {
 }
 
 //删除四层监听器，https://cloud.tencent.com/document/product/386/9293
-func (client *BmLoadBalancerClient) DeleteBmListeners(req *DeleteBmListenersRequest) (int, error) {
+func (client *Client) DeleteBmListeners(req *DeleteBmListenersRequest) (int, error) {
 	rsp := &LbRequestIdResponse{}
 	err := client.Invoke("DeleteBmListeners", req, rsp)
 	if err != nil {

@@ -3,6 +3,7 @@ package bmvpc
 import (
 	"github.com/dbdd4us/qcloudapi-sdk-go/common"
 	"time"
+        "errors"
 )
 
 const (
@@ -14,6 +15,11 @@ const (
 
 	TASK_QUERY_INTERVAL = 1
 )
+
+type BmVpcResponse struct {
+	Response interface{} `json:"data"`
+}
+
 
 type DescribeBmSubnetRequest struct {
 	UnVpcId    *string `qcloud_arg:"unVpcId,omitempty"`
@@ -31,8 +37,8 @@ type BmSubnetDetail struct {
 	UnSubnetId       string `json:"unSubnetId"`
 	SubnetName       string `json:"subnetName"`
 	CidrBlock        string `json:"cidrBlock"`
-	ZoneId           string `json:"zoneId"`
-	VlanId           string `json:"vlanId"`
+	ZoneId           int  `json:"zoneId"`
+	VlanId           int  `json:"vlanId"`
 	DhcpEnable       int    `json:"dhcpEnable"`
 	IpReserved       int    `json:"ipReserve"`
 	DistributeedFlag int    `json:"distributedFlag"`
@@ -84,13 +90,13 @@ type BmSubnetCreateParam struct {
 }
 
 type CreateBmSubnetRequest struct {
-	UnVpcId   string                `qcloud_arg"unVpcId"`
+	UnVpcId   string                `qcloud_arg:"unVpcId"`
 	VLanId    *int                  `qcloud_arg:"vlanId"`
-	SubnetSet []BmSubnetCreateParam `Aqcloud_arg:"subnetSet"`
+	SubnetSet []BmSubnetCreateParam `qcloud_arg:"subnetSet"`
 }
 
 type BmSubnetInfo struct {
-	SubnetId   string `json:"subnetId"`
+	SubnetId   int  `json:"subnetId"`
 	UnSubnetId string `json:"unSubnetId"`
 	SubnetName string `json:"subnetName"`
 	CidrBlock  string `json:"cidrBlock"`
@@ -103,7 +109,7 @@ type CreateBmSubnetResponse struct {
 //创建子网：https://cloud.tencent.com/document/product/386/9263
 func (client *Client) CreateBmSubnet(req *CreateBmSubnetRequest) (*[]BmSubnetInfo, error) {
 	rsp := &CreateBmSubnetResponse{}
-	err := client.Invoke("CreateBmSubnetd", req, rsp)
+	err := client.Invoke("CreateBmSubnet", req, rsp)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +128,11 @@ type BmVpcTask struct {
 	ResourceIds []string `json:"instanceIds"`
 }
 
+
 //将物理机添加到子网：https://cloud.tencent.com/document/product/386/9265
 func (client *Client) CreateBmInterface(req *CreateBmInterfaceRequest) (int, error) {
 	bmVpcTask := &BmVpcTask{}
-	rsp := &common.DataResponse{
+	rsp := &BmVpcResponse {
 		Response: bmVpcTask,
 	}
 
@@ -142,7 +149,7 @@ type DelBmInterfaceRequest CreateBmInterfaceRequest
 //物理机中移除子网：https://cloud.tencent.com/document/product/386/9266
 func (client *Client) DelBmInterface(req *DelBmInterfaceRequest) (int, error) {
 	bmVpcTask := &BmVpcTask{}
-	rsp := &common.DataResponse{
+	rsp := &BmVpcResponse {
 		Response: bmVpcTask,
 	}
 
@@ -161,15 +168,15 @@ type DeleteBmSubnetRequest struct {
 
 //https://cloud.tencent.com/document/product/386/9264
 func (client *Client) DeleteBmSubnet(req *DeleteBmSubnetRequest) error {
-	rsp := &common.Response{}
+	rsp := &common.LegacyAPIError{}
 	err := client.Invoke("DeleteBmSubnet", req, rsp)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	if rsp.Code == 0 {
 		return nil
 	} else {
-		return error.New(rsp.Message)
+		return errors.New(rsp.Message)
 	}
 }
 
@@ -188,35 +195,38 @@ func (client *Client) QueryBmTaskResult(taskId int) (int, error) {
 	}
 
 	taskStatus := &BmVpcTaskStatus{}
-	rsp := &common.DataResponse{
+	rsp := &BmVpcResponse{
 		Response: taskStatus,
 	}
 
-	err := client.Invoke("QueryBmTaskResult", req, rsp)
+	err := client.Invoke("QueryBmNatGatewayProductionStatus", req, rsp)
 	if err != nil {
-		return common.TASK_STATE_UNKNOWN, err
+		return TASK_STATE_UNKNOWN, err
 	}
 	return taskStatus.Status, nil
 }
 
 func (client *Client) WaitUntiTaskDone(taskId int, timeout int) error {
-
 	count := 0
 	for {
 		time.Sleep(TASK_QUERY_INTERVAL * time.Second)
 		count++
 
-		state := client.QueryBmTaskResult(taskId)
+		state ,err := client.QueryBmTaskResult(taskId)
+		if err != nil {
+			return err
+		}
+		
 		if state == TASK_STATE_SUCCESS {
 			return nil
 		} else if state == TASK_STATE_FAILED {
-			return error.New("bmVpc waitUntilTaskDone task failed")
+			return errors.New("bmVpc waitUntilTaskDone task failed")
 		}
 
 		if count*TASK_QUERY_INTERVAL < timeout {
 			continue
 		} else {
-			return error.New("bmVpc waitUntilTaskDone task timeout")
+			return errors.New("bmVpc waitUntilTaskDone task timeout")
 		}
 	}
 }
