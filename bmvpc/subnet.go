@@ -1,17 +1,17 @@
 package bmvpc
 
 import (
+	"errors"
 	"github.com/dbdd4us/qcloudapi-sdk-go/common"
 	"time"
-        "errors"
 )
 
 const (
-	TASK_STATE_SUCCESS = 0
-	TASK_STATE_FAILED  = 1
-	TASK_STATE_DOING   = 2
-	TASK_STATE_UNKNOWN = 3
-	TASK_STATE_TIMEOUT = 4
+	TASK_STATE_SUCCESS = "success"
+	TASK_STATE_FAILED  = "fail"
+	TASK_STATE_DOING   = "doing"
+	TASK_STATE_UNKNOWN = "unknown"
+	TASK_STATE_TIMEOUT = "timeout"
 
 	TASK_QUERY_INTERVAL = 1
 )
@@ -19,7 +19,6 @@ const (
 type BmVpcResponse struct {
 	Response interface{} `json:"data"`
 }
-
 
 type DescribeBmSubnetRequest struct {
 	UnVpcId    *string `qcloud_arg:"unVpcId,omitempty"`
@@ -37,8 +36,8 @@ type BmSubnetDetail struct {
 	UnSubnetId       string `json:"unSubnetId"`
 	SubnetName       string `json:"subnetName"`
 	CidrBlock        string `json:"cidrBlock"`
-	ZoneId           int  `json:"zoneId"`
-	VlanId           int  `json:"vlanId"`
+	ZoneId           int    `json:"zoneId"`
+	VlanId           int    `json:"vlanId"`
 	DhcpEnable       int    `json:"dhcpEnable"`
 	IpReserved       int    `json:"ipReserve"`
 	DistributeedFlag int    `json:"distributedFlag"`
@@ -96,7 +95,7 @@ type CreateBmSubnetRequest struct {
 }
 
 type BmSubnetInfo struct {
-	SubnetId   int  `json:"subnetId"`
+	SubnetId   int    `json:"subnetId"`
 	UnSubnetId string `json:"unSubnetId"`
 	SubnetName string `json:"subnetName"`
 	CidrBlock  string `json:"cidrBlock"`
@@ -128,11 +127,10 @@ type BmVpcTask struct {
 	ResourceIds []string `json:"instanceIds"`
 }
 
-
 //将物理机添加到子网：https://cloud.tencent.com/document/product/386/9265
 func (client *Client) CreateBmInterface(req *CreateBmInterfaceRequest) (int, error) {
 	bmVpcTask := &BmVpcTask{}
-	rsp := &BmVpcResponse {
+	rsp := &BmVpcResponse{
 		Response: bmVpcTask,
 	}
 
@@ -149,7 +147,7 @@ type DelBmInterfaceRequest CreateBmInterfaceRequest
 //物理机中移除子网：https://cloud.tencent.com/document/product/386/9266
 func (client *Client) DelBmInterface(req *DelBmInterfaceRequest) (int, error) {
 	bmVpcTask := &BmVpcTask{}
-	rsp := &BmVpcResponse {
+	rsp := &BmVpcResponse{
 		Response: bmVpcTask,
 	}
 
@@ -185,25 +183,26 @@ type BmVpcQueryTaskRequest struct {
 }
 
 type BmVpcTaskStatus struct {
-	Status int `json:"status"`
+	Status map[string]string `json:"data"`
 }
 
 //https://cloud.tencent.com/document/product/386/9267
-func (client *Client) QueryBmTaskResult(taskId int) (int, error) {
+func (client *Client) QueryBmTaskResult(taskId int) (string, error) {
 	req := BmVpcQueryTaskRequest{
 		TaskId: taskId,
 	}
 
-	taskStatus := &BmVpcTaskStatus{}
-	rsp := &BmVpcResponse{
-		Response: taskStatus,
-	}
+	rsp := &BmVpcTaskStatus{}
 
-	err := client.Invoke("QueryBmNatGatewayProductionStatus", req, rsp)
-	if err != nil {
+	err := client.Invoke("QueryBmTaskResult", req, rsp)
+	if err != nil || len(rsp.Status) != 1 {
 		return TASK_STATE_UNKNOWN, err
 	}
-	return taskStatus.Status, nil
+
+	for _, val := range rsp.Status {
+		return val, nil
+	}
+	return TASK_STATE_UNKNOWN, errors.New("QueryBmTaskResult can't go here")
 }
 
 func (client *Client) WaitUntiTaskDone(taskId int, timeout int) error {
@@ -212,15 +211,16 @@ func (client *Client) WaitUntiTaskDone(taskId int, timeout int) error {
 		time.Sleep(TASK_QUERY_INTERVAL * time.Second)
 		count++
 
-		state ,err := client.QueryBmTaskResult(taskId)
+		state, err := client.QueryBmTaskResult(taskId)
 		if err != nil {
 			return err
 		}
-		
 		if state == TASK_STATE_SUCCESS {
 			return nil
 		} else if state == TASK_STATE_FAILED {
 			return errors.New("bmVpc waitUntilTaskDone task failed")
+		} else if state == TASK_STATE_UNKNOWN {
+			return errors.New("bmVpc waitUntilTaskDone task state unknown")
 		}
 
 		if count*TASK_QUERY_INTERVAL < timeout {

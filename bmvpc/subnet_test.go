@@ -5,10 +5,9 @@ import (
 	"testing"
 )
 
-
-func ListSubnet(client *Client,t *testing.T) error {
+func ListSubnet(client *Client, t *testing.T) error {
 	limit := 20000
-	subnetName:="ccs_bm_brank"
+	subnetName := "ccs_bm_brank"
 	req := &DescribeBmSubnetRequest{
 		SubnetName: &subnetName,
 		Limit:      &limit,
@@ -16,50 +15,47 @@ func ListSubnet(client *Client,t *testing.T) error {
 	describeBmSubnetRsp, err := client.DescribeBmSubnetEx(req)
 	if err != nil {
 		t.Error(err.Error())
-		return  err
-	}else {
-		t.Logf("describeBmSubnetEx ok rsp=%v\n",describeBmSubnetRsp)
-		return nil 
+		return err
+	} else {
+		t.Logf("describeBmSubnetEx ok rsp=%v\n", describeBmSubnetRsp)
+		return nil
 	}
 }
 
-
-func tesBmInterface(client *Client,t *testing.T) {
-    //将物理机加入子网
-	unVpcId := "vpc-f5hfhmpo"
-	unSubnetId :="subnet-2ge7vz9p"
-	instanceIds := []string{"cpm-an5a9wv4"}
-	req := &CreateBmInterfaceRequest {
+func tesBmInterface(client *Client, t *testing.T, unVpcId, unSubnetId string) {
+	//将物理机加入子网
+	instanceIds := []string{"cpm-9co2vbzi"}
+	req := &CreateBmInterfaceRequest{
 		UnVpcId:     unVpcId,
 		UnSubnetId:  unSubnetId,
 		InstanceIds: instanceIds,
 	}
 
 	taskId, err := client.CreateBmInterface(req)
-	if err != nil{
+	if err != nil {
 		t.Error(err.Error())
-		return 
+		return
 	}
 
-	err = client.WaitUntiTaskDone(taskId,60)
-	if err != nil{
+	err = client.WaitUntiTaskDone(taskId, 60)
+	if err != nil {
 		t.Error(err.Error())
-		return 
-	}else{
+		return
+	} else {
 		t.Logf("createBmInterface ok")
 	}
 
 	//查询物理机列表
 	describeBmReq := &DescribeBmCpmRequest{
-			UnVpcId:    unVpcId,
-			UnSubnetId: unSubnetId,
+		UnVpcId:    unVpcId,
+		UnSubnetId: unSubnetId,
 	}
 	cpmSet, err := client.DescribeBmCpmBySubnetId(describeBmReq)
 	if err != nil {
 		t.Error(err.Error())
-		return 
-	}else{
-		t.Logf("cpmSet=%v",cpmSet)
+		return
+	} else {
+		t.Logf("cpmSet=%v", cpmSet)
 	}
 
 	//将物理机移出子网
@@ -70,27 +66,26 @@ func tesBmInterface(client *Client,t *testing.T) {
 	}
 
 	taskId, err = client.DelBmInterface(delBmInterfaceReq)
-	if err != nil{
+	if err != nil {
 		t.Error(err.Error())
-		return 
-	}else {
+		return
+	} else {
 		t.Log("DelBmInterface ok")
 	}
 
-    err=client.WaitUntiTaskDone(taskId,60)
-	if err != nil{
+	err = client.WaitUntiTaskDone(taskId, 60)
+	if err != nil {
 		t.Error(err.Error())
-		return 
-	}else{
+		return
+	} else {
 		t.Logf("DelBmInterface ok")
 	}
 }
 
-
 func TestSubnet(t *testing.T) {
-	unVpcId:="vpc-f5hfhmpo"
-	subnetName:="ccs_bm_brank"
-    invokeOpts := common.Opts{
+	unVpcId := "vpc-9jso7qmq"
+	subnetName := "ccs_bm_brank"
+	invokeOpts := common.Opts{
 		Region: "ap-guangzhou",
 	}
 
@@ -103,10 +98,10 @@ func TestSubnet(t *testing.T) {
 
 	//1、创建子网
 	distributedFlag := 0
-	vlanId := 2903
+	vlanId := 2905
 	subnetCreateParam := BmSubnetCreateParam{
 		SubnetName:      subnetName,
-		CidrBlock:       "10.20.61.0/24",
+		CidrBlock:       "10.0.253.0/24",
 		DistributedFlag: &distributedFlag,
 	}
 	subnetSet := []BmSubnetCreateParam{subnetCreateParam}
@@ -117,19 +112,19 @@ func TestSubnet(t *testing.T) {
 	}
 	outputSubnetSet, err := client.CreateBmSubnet(createSubnetReq)
 	if err != nil {
-         t.Error(err.Error())
-		 return 
-	}else {
-		t.Logf("CreateBmSubnet ok ouptuSubnetSet=%v",outputSubnetSet)
-	}
-	
-	//2、查询子网
-	err = ListSubnet(client,t)
-	if err != nil{
-		return 
+		t.Error(err.Error())
+		return
+	} else {
+		t.Logf("CreateBmSubnet ok ouptuSubnetSet=%v", outputSubnetSet)
 	}
 
-	tesBmInterface(client,t)
+	//2、查询子网
+	err = ListSubnet(client, t)
+	if err != nil {
+		return
+	}
+
+	tesBmInterface(client, t, unVpcId, (*outputSubnetSet)[0].UnSubnetId)
 
 	//3、删除子网
 	req := &DeleteBmSubnetRequest{
@@ -138,14 +133,11 @@ func TestSubnet(t *testing.T) {
 	}
 
 	err = client.DeleteBmSubnet(req)
-	if err != nil{
-		 t.Error(err.Error())
-		return 
-	}else{
-		t.Log("DleteBmSubnet OK ")
+	if err != nil {
+		t.Error(err.Error())
+		return
+	} else {
+		t.Log("DeleteBmSubnet OK ")
 	}
 
-	
 }
-
-

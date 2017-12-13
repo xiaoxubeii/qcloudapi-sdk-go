@@ -13,6 +13,7 @@ type LegacyAPIError struct {
 	CodeDesc string `json:"codeDesc"`
 }
 
+
 func (lae LegacyAPIError) Error() string {
 	return lae.Message
 }
