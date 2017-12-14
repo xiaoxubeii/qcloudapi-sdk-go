@@ -104,7 +104,7 @@ type CreateBmLbReq struct {
 	ProjectId  *int    `qcloud_arg:"projectId,omitempty"`
 	GoodsNum   *int    `qcloud_arg:"goodsNum,omitempty"`
 	PayMode    *string `qcloud_arg:"payMode,omitempty"`
-	TgwSet     *string `qcloud_arg:"tgwSetType,omitempty"`
+	TgwSetType *string `qcloud_arg:"tgwSetType,omitempty"`
 }
 
 type CreateBmLbResponse struct {
