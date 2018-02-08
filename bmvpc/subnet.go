@@ -41,6 +41,7 @@ type BmSubnetDetail struct {
 	DhcpEnable       int    `json:"dhcpEnable"`
 	IpReserved       int    `json:"ipReserve"`
 	DistributeedFlag int    `json:"distributedFlag"`
+    Type             int    `json:"type,omitempty"`
 }
 
 type BmDescribeSubnetResponse struct {
