@@ -83,12 +83,13 @@ func tesBmInterface(client *Client, t *testing.T, unVpcId, unSubnetId string) {
 }
 
 func TestSubnet(t *testing.T) {
-	unVpcId := "vpc-9jso7qmq"
-	subnetName := "ccs_bm_brank"
+	//unVpcId := "vpc-muinpf9p"
+	//vpcId:=4100
+	//subnetName := "ccs_bm_brank"
 	client, _ := NewClientFromEnv()
 
 	//1、创建子网
-	distributedFlag := 0
+	/*distributedFlag := 0
 	vlanId := 2905
 	subnetCreateParam := BmSubnetCreateParam{
 		SubnetName:      subnetName,
@@ -107,28 +108,50 @@ func TestSubnet(t *testing.T) {
 		return
 	} else {
 		t.Logf("CreateBmSubnet ok ouptuSubnetSet=%v", outputSubnetSet)
+	}*/
+
+	//1、创建容器子网
+	/*subnetCreateParam := BmSubnetCreateParam{
+		SubnetName: subnetName,
+		CidrBlock:  "10.1.96.0/25",
 	}
+	vlanId := 2999
+	subnetSet := []BmSubnetCreateParam{subnetCreateParam}
+	containerSubnetCreateReq := &BmCreateContainerSubnetReq{
+		UnVpcId: &unVpcId,
+		VLanId:  &vlanId,
+		//VpcId:  &vpcId,
+		SubnetType: 6,
+		SubnetSet:  subnetSet,
+	}
+	outputSubnetSet, err := client.CreateBmContainerSubnet(containerSubnetCreateReq)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	} else {
+		t.Logf("CreateBmContainerSubnet ok ouptuSubnetSet=%v", outputSubnetSet)
+	}*/
 
 	//2、查询子网
-	err = ListSubnet(client, t)
+	err := ListSubnet(client, t)
 	if err != nil {
 		return
 	}
 
-	tesBmInterface(client, t, unVpcId, (*outputSubnetSet)[0].UnSubnetId)
+	//tesBmInterface(client, t, unVpcId, (*outputSubnetSet)[0].UnSubnetId)
 
 	//3、删除子网
-	req := &DeleteBmSubnetRequest{
+	/*req := &DeleteBmSubnetRequest{
 		UnVpcId:    unVpcId,
 		UnSubnetId: (*outputSubnetSet)[0].UnSubnetId,
 	}
 
-	err = client.DeleteBmSubnet(req)
+	err = client.DeleteBmContainerSubnet(req)
 	if err != nil {
 		t.Error(err.Error())
 		return
 	} else {
 		t.Log("DeleteBmSubnet OK ")
-	}
+	}*/
 
 }

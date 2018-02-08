@@ -230,3 +230,37 @@ func (client *Client) WaitUntiTaskDone(taskId int, timeout int) error {
 		}
 	}
 }
+
+type BmCreateContainerSubnetReq struct {
+	UnVpcId    *string               `qcloud_arg:"unVpcId"`
+	VpcId      *int                  `qcloud_arg:"vpcId"`
+	VLanId     *int                  `qcloud_arg:"vlanId"`
+	SubnetType int                   `qcloud_arg:"subnetType"` // 6:ccs; 7:docker, 默认为docker子网
+	SubnetSet  []BmSubnetCreateParam `qcloud_arg:"subnetSet"`  //只要填subnetName和cidrBlock"即可
+
+}
+
+//desmondhe 新加接口，CreateBmContainerSubnet
+func (client *Client) CreateBmContainerSubnet(req *BmCreateContainerSubnetReq) (*[]BmSubnetInfo, error) {
+	rsp := &CreateBmSubnetResponse{}
+	err := client.Invoke("CreateBmContainerSubnet", req, rsp)
+	if err != nil {
+		return nil, err
+	}
+	return &rsp.SubnetSet, nil
+}
+
+//desmondehe 新加接口,DeleteBmContainerSubnet
+func (client *Client) DeleteBmContainerSubnet(req *DeleteBmSubnetRequest) error {
+	rsp := &common.LegacyAPIError{}
+	err := client.Invoke("DeleteBmContainerSubnet", req, rsp)
+	if err != nil {
+		return err
+	}
+	if rsp.Code == 0 {
+		return nil
+	} else {
+		return errors.New(rsp.Message)
+	}
+
+}
